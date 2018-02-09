@@ -1,40 +1,79 @@
 var express = require('express');
 var app = express();
 var bodyParser = require('body-parser');
+var mongoose = require('mongoose');
 
+mongoose.connect("mongodb://localhost/yelp_camp");
 app.use(bodyParser.urlencoded({extended: true}));
 app.set('view engine', 'ejs');
 
-var campgrounds = [
-    {name: 'Salmond Creek', image: 'http://www.dismalscanyon.com/campsites/images/sleeping_water_5177_900px.jpg'},
-    {name: 'Granite Hill', image: 'https://cdn.vox-cdn.com/thumbor/-JoPdcgAuLTUsWiDZ62CX4wb33k=/0x0:5225x3479/1200x800/filters:focal(2195x1322:3031x2158)/cdn.vox-cdn.com/uploads/chorus_image/image/54137643/camping_tents.0.jpg'},
-    {name: "Mountain Goat's Rest", image: 'https://edallens.com/wp-content/gallery/campsites/ed-allens-campsites-dsc_0016.jpg?x83656'},
-    {name: 'Salmond Creek', image: 'http://www.dismalscanyon.com/campsites/images/sleeping_water_5177_900px.jpg'},
-    {name: 'Granite Hill', image: 'https://cdn.vox-cdn.com/thumbor/-JoPdcgAuLTUsWiDZ62CX4wb33k=/0x0:5225x3479/1200x800/filters:focal(2195x1322:3031x2158)/cdn.vox-cdn.com/uploads/chorus_image/image/54137643/camping_tents.0.jpg'},
-    {name: "Mountain Goat's Rest", image: 'https://edallens.com/wp-content/gallery/campsites/ed-allens-campsites-dsc_0016.jpg?x83656'},
-    {name: 'Salmond Creek', image: 'http://www.dismalscanyon.com/campsites/images/sleeping_water_5177_900px.jpg'},
-    {name: 'Granite Hill', image: 'https://cdn.vox-cdn.com/thumbor/-JoPdcgAuLTUsWiDZ62CX4wb33k=/0x0:5225x3479/1200x800/filters:focal(2195x1322:3031x2158)/cdn.vox-cdn.com/uploads/chorus_image/image/54137643/camping_tents.0.jpg'},
-    {name: "Mountain Goat's Rest", image: 'https://edallens.com/wp-content/gallery/campsites/ed-allens-campsites-dsc_0016.jpg?x83656'}
-];
+// SCHEMA SETUP
+var campgroundSchema = new mongoose.Schema({
+    name: String,
+    image: String,
+    description: String
+});
+
+var Campground = mongoose.model('Campground', campgroundSchema);
+
+// Campground.create({
+//   name: 'Granite Hill', 
+//   image: 'https://cdn.vox-cdn.com/thumbor/-JoPdcgAuLTUsWiDZ62CX4wb33k=/0x0:5225x3479/1200x800/filters:focal(2195x1322:3031x2158)/cdn.vox-cdn.com/uploads/chorus_image/image/54137643/camping_tents.0.jpg',
+//   description: 'This is a huge granite hill, no bathroom'
+// }, function(err, campground){
+//     if(err) {
+//         console.log(err);
+//     } else {
+//         console.log("Newly created campground: ");
+//         console.log(campground);
+//     }
+// });
 
 app.get('/', function(req, res){
     res.render("landing");
 });
 
+// INDEX
 app.get('/campgrounds', function(req, res){
-    res.render('campgrounds', {campgrounds});
+    Campground.find({}, function(err, campgrounds){
+        if(err){
+            console.log(err);
+        } else {
+            res.render('index', {campgrounds: campgrounds});
+        }
+    });
 });
 
-app.post('/campgrounds', function(req, res){
-	var name = req.body.name;
-	var image = req.body.image;
-	var newCamp = {name: name, image: image};
-	campgrounds.push(newCamp);
-	res.redirect('/campgrounds');
-});
-
+// NEW
 app.get('/campgrounds/new', function(req, res){
-	res.render('new.ejs');
+    res.render('new.ejs');
+});
+
+// CREATE
+app.post('/campgrounds', function(req, res){
+    var name = req.body.name;
+    var image = req.body.image;
+    var desc = req.body.description;
+    var newCamp = {name: name, image: image, description: desc};
+    Campground.create(newCamp, function(err, newlyCreated){
+        if(err){
+            console.log(err);
+        } else {
+            res.redirect('/campgrounds');
+        }
+    });
+});
+
+// SHOW 
+app.get('/campgrounds/:id', function(req, res){
+    Campground.findById(req.params.id, function(err, foundCampground){
+        if(err) {
+            console.log(err);
+        } else {
+            res.render('show', {campground: foundCampground});
+        }
+    });
+    
 });
 
 app.listen(3000, function(){
